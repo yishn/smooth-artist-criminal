@@ -28,18 +28,18 @@ export class SmoothArtistCriminal {
 
     this.id = 0
     this.pathData = {}
-    this.pointerPathId = null
+    this.pointerPathIds = {}
 
     this.handlePointerDown = evt => {
-      if (evt.button !== 0) return
+      if (this.pointerPathIds[evt.pointerId] != null || evt.button !== 0) return
 
       evt.preventDefault()
 
-      this.pointerPathId = this.startPath().id
+      this.pointerPathIds[evt.pointerId] = this.startPath().id
     }
 
     this.handlePointerMove = evt => {
-      if (this.pointerPathId == null) return
+      if (this.pointerPathIds[evt.pointerId] == null) return
 
       let viewBox = this.element.viewBox.baseVal
       let {left, top, width, height} = this.element.getBoundingClientRect()
@@ -50,14 +50,14 @@ export class SmoothArtistCriminal {
         point[1] = point[1] * viewBox.height / height + viewBox.y
       }
 
-      this.drawPath(this.pointerPathId, point)
+      this.drawPath(this.pointerPathIds[evt.pointerId], point)
     }
 
     this.handlePointerUp = evt => {
-      if (this.pointerPathId == null || evt.button !== 0) return
+      if (this.pointerPathIds[evt.pointerId] == null || evt.button !== 0) return
 
-      this.endPath(this.pointerPathId)
-      this.pointerPathId = null
+      this.endPath(this.pointerPathIds[evt.pointerId])
+      delete this.pointerPathIds[evt.pointerId]
     }
 
     this.mount()
