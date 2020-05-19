@@ -1,4 +1,16 @@
-import {interpolate, cubicBeziersToPath} from './cubicBezierInterpolation.js'
+import {interpolate} from './cubicBezierInterpolation.js'
+
+export function cubicBeziersToPath(cubicBeziers) {
+  if (cubicBeziers.length === 0) return ''
+
+  return `M ${cubicBeziers[0].p1.join(' ')} ${
+    cubicBeziers
+    .map(({c1, c2, p2}) =>
+      `C ${c1.join(' ')}, ${c2.join(' ')}, ${p2.join(' ')}`
+    )
+    .join(' ')
+  }`
+}
 
 export class SmoothArtistCriminal {
   constructor(element, options = {}) {
@@ -26,9 +38,9 @@ export class SmoothArtistCriminal {
       if (this.mousePathId == null) return
 
       let {left, top} = this.element.getBoundingClientRect()
-      let [x, y] = [evt.clientX - left, evt.clientY - top]
+      let point = [evt.clientX - left, evt.clientY - top].map(Math.round)
 
-      this.drawPath(this.mousePathId, x, y)
+      this.drawPath(this.mousePathId, point)
     }
 
     this.handleMouseUp = evt => {
@@ -68,18 +80,17 @@ export class SmoothArtistCriminal {
       element: pathElement,
       controlPoints: [],
       lastPoint: null,
-      lastRecordedTime: null
+      lastRecordedTime: null,
+      cubicBeziers: []
     }
 
     this.options.onStartPath(this.pathData[id])
     return this.pathData[id]
   }
 
-  drawPath(id, x, y) {
+  drawPath(id, [x, y]) {
     let pathData = this.pathData[id]
     if (pathData == null) return
-
-    let d = ''
 
     if (
       pathData.lastRecordedTime == null ||
@@ -87,15 +98,14 @@ export class SmoothArtistCriminal {
     ) {
       pathData.lastRecordedTime = Date.now()
       pathData.controlPoints.push([x, y])
-      pathData.lastPoint = [x, y]
-
-      d = cubicBeziersToPath(interpolate(pathData.controlPoints))
+      pathData.cubicBeziers = interpolate(pathData.controlPoints)
     } else {
-      pathData.lastPoint = [x, y]
-
-      d = cubicBeziersToPath(interpolate([...pathData.controlPoints, [x, y]]))
+      pathData.cubicBeziers = interpolate([...pathData.controlPoints, [x, y]])
     }
 
+    let d = cubicBeziersToPath(pathData.cubicBeziers)
+
+    pathData.lastPoint = [x, y]
     pathData.element.setAttribute('d', d)
 
     this.options.onDrawPath(pathData)
@@ -104,6 +114,8 @@ export class SmoothArtistCriminal {
   endPath(id) {
     let pathData = this.pathData[id]
     if (pathData == null) return
+
+    pathData.controlPoints.push(pathData.lastPoint)
 
     if (pathData.controlPoints.length === 0) {
       pathData.element.parentNode.removeChild(pathData.element)

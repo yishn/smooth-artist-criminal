@@ -1,13 +1,13 @@
-function add([x1, y1], [x2, y2]) {
-  return [x1 + x2, y1 + y2]
+function add(p1, p2) {
+  return p1.map((x, i) => x + p2[i])
 }
 
-function subtract([x1, y1], [x2, y2]) {
-  return [x1 - x2, y1 - y2]
+function subtract(p1, p2) {
+  return p1.map((x, i) => x - p2[i])
 }
 
-function norm([x, y]) {
-  return Math.sqrt(x ** 2 + y ** 2)
+function norm(p) {
+  return Math.sqrt(p.reduce((sum, x) => sum + x ** 2, 0))
 }
 
 function normalize(a, p) {
@@ -15,7 +15,13 @@ function normalize(a, p) {
   return p.map(x => n === 0 ? 0 : a * x / n)
 }
 
-export function interpolate(controlPoints) {
+export function getDifferentials(controlPoints) {
+  return controlPoints.map((p, i) =>
+    subtract(controlPoints[i + 1] || p, controlPoints[i - 1] || controlPoints[0])
+  )
+}
+
+export function interpolate(controlPoints, differentials = null) {
   if (controlPoints.length === 0) return []
   if (controlPoints.length <= 2) {
     return [{
@@ -26,9 +32,9 @@ export function interpolate(controlPoints) {
     }]
   }
 
-  let slopes = controlPoints.map((p, i) =>
-    subtract(controlPoints[i + 1] || p, controlPoints[i - 1] || controlPoints[0])
-  )
+  if (differentials == null || differentials.length !== controlPoints.length) {
+    differentials = getDifferentials(controlPoints)
+  }
 
   return controlPoints.slice(0, -1).map((p, i) => {
     let p1 = p
@@ -37,21 +43,9 @@ export function interpolate(controlPoints) {
 
     return {
       p1,
-      c1: add(normalize(distance / 3, slopes[i]), p1),
+      c1: add(normalize(distance / 3, differentials[i]), p1),
       p2,
-      c2: add(normalize(-distance / 3, slopes[i + 1]), p2)
+      c2: add(normalize(-distance / 3, differentials[i + 1]), p2)
     }
   })
-}
-
-export function cubicBeziersToPath(cubicBeziers) {
-  if (cubicBeziers.length === 0) return ''
-
-  return `M ${cubicBeziers[0].p1.join(' ')} ${
-    cubicBeziers
-    .map(({c1, c2, p2}) =>
-      `C ${c1.join(' ')}, ${c2.join(' ')}, ${p2.join(' ')}`
-    )
-    .join(' ')
-  }`
 }

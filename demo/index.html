@@ -22,7 +22,11 @@
   <script type="module">
     import {SmoothArtistCriminal} from '../src/main.js'
 
-    new SmoothArtistCriminal(document.getElementById('drawing'))
+    new SmoothArtistCriminal(document.getElementById('drawing'), {
+      onEndPath: evt => {
+        console.log('onEndPath', evt)
+      }
+    })
   </script>
 </body>
 </html>
