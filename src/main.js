@@ -28,45 +28,51 @@ export class SmoothArtistCriminal {
 
     this.id = 0
     this.pathData = {}
-    this.mousePathId = null
+    this.pointerPathId = null
 
-    this.handleMouseDown = evt => {
+    this.handlePointerDown = evt => {
       if (evt.button !== 0) return
 
       evt.preventDefault()
 
-      this.mousePathId = this.startPath().id
+      this.pointerPathId = this.startPath().id
     }
 
-    this.handleMouseMove = evt => {
-      if (this.mousePathId == null) return
+    this.handlePointerMove = evt => {
+      if (this.pointerPathId == null) return
 
-      let {left, top} = this.element.getBoundingClientRect()
+      let viewBox = this.element.viewBox.baseVal
+      let {left, top, width, height} = this.element.getBoundingClientRect()
       let point = [evt.clientX - left, evt.clientY - top].map(Math.round)
 
-      this.drawPath(this.mousePathId, point)
+      if (viewBox.width > 0 && viewBox.height > 0) {
+        point[0] = point[0] * viewBox.width / width + viewBox.x
+        point[1] = point[1] * viewBox.height / height + viewBox.y
+      }
+
+      this.drawPath(this.pointerPathId, point)
     }
 
-    this.handleMouseUp = evt => {
-      if (this.mousePathId == null || evt.button !== 0) return
+    this.handlePointerUp = evt => {
+      if (this.pointerPathId == null || evt.button !== 0) return
 
-      this.endPath(this.mousePathId)
-      this.mousePathId = null
+      this.endPath(this.pointerPathId)
+      this.pointerPathId = null
     }
 
     this.mount()
   }
 
   mount() {
-    this.element.addEventListener('mousedown', this.handleMouseDown)
-    this.element.addEventListener('mousemove', this.handleMouseMove)
-    document.addEventListener('mouseup', this.handleMouseUp)
+    this.element.addEventListener('pointerdown', this.handlePointerDown)
+    this.element.addEventListener('pointermove', this.handlePointerMove)
+    document.addEventListener('pointerup', this.handlePointerUp)
   }
 
   unmount() {
-    this.element.removeEventListener('mousedown', this.handleMouseDown)
-    this.element.removeEventListener('mousemove', this.handleMouseMove)
-    document.removeEventListener('mouseup', this.handleMouseUp)
+    this.element.removeEventListener('pointerdown', this.handlePointerDown)
+    this.element.removeEventListener('pointermove', this.handlePointerMove)
+    document.removeEventListener('pointerup', this.handlePointerUp)
   }
 
   startPath() {
