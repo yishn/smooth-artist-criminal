@@ -1,16 +1,16 @@
-function add(p1, p2) {
+export function add(p1, p2) {
   return p1.map((x, i) => x + p2[i])
 }
 
-function subtract(p1, p2) {
+export function subtract(p1, p2) {
   return p1.map((x, i) => x - p2[i])
 }
 
-function norm(p) {
+export function norm(p) {
   return Math.sqrt(p.reduce((sum, x) => sum + x ** 2, 0))
 }
 
-function normalize(a, p) {
+export function normalize(a, p) {
   let n = norm(p)
   return p.map(x => n === 0 ? 0 : a * x / n)
 }
@@ -43,9 +43,9 @@ export function interpolate(controlPoints, differentials = null) {
 
     return {
       p1,
-      c1: add(normalize(distance / 3, differentials[i]), p1),
+      c1: add(p1, normalize(distance / 3, differentials[i])),
       p2,
-      c2: add(normalize(-distance / 3, differentials[i + 1]), p2)
+      c2: subtract(p2, normalize(distance / 3, differentials[i + 1]))
     }
   })
 }
