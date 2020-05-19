@@ -1,0 +1,31 @@
+{
+  "name": "smooth-artist-criminal",
+  "version": "1.0.0",
+  "description": "Draw smooth vectorized paths.",
+  "module": "./src/main.js",
+  "scripts": {
+    "start": "http-server .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yishn/smooth-artist-criminal.git"
+  },
+  "keywords": [
+    "smooth",
+    "drawing",
+    "pencil",
+    "vector",
+    "svg",
+    "painting"
+  ],
+  "author": "Yichuan Shen",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yishn/smooth-artist-criminal/issues"
+  },
+  "homepage": "https://github.com/yishn/smooth-artist-criminal#readme",
+  "devDependencies": {
+    "http-server": "^0.12.3"
+  }
+}

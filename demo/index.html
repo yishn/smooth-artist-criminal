@@ -1,0 +1,28 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo Page</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    #drawing {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <svg id="drawing">
+  </svg>
+
+  <script type="module">
+    import {SmoothArtistCriminal} from '../src/main.js'
+
+    new SmoothArtistCriminal(document.getElementById('drawing'))
+  </script>
+</body>
+</html>
