@@ -4,7 +4,7 @@ export class SmoothArtistCriminal {
   constructor(element, options = {}) {
     this.element = element
     this.options = {
-      recordingInterval: options.recordingInterval || 200,
+      recordingInterval: options.recordingInterval || 50,
       onStartPath: options.onStartPath || (() => {}),
       onEndPath: options.onEndPath || (() => {}),
       onDrawPath: options.onDrawPath || (() => {}),
@@ -12,17 +12,30 @@ export class SmoothArtistCriminal {
 
     this.id = 0
     this.pathData = {}
+    this.mousePathId = null
 
     this.handleMouseDown = evt => {
-      console.log('mousedown')
+      if (evt.button !== 0) return
+
+      evt.preventDefault()
+
+      this.mousePathId = this.startPath().id
     }
 
     this.handleMouseMove = evt => {
-      console.log(evt)
+      if (this.mousePathId == null) return
+
+      let {left, top} = this.element.getBoundingClientRect()
+      let [x, y] = [evt.clientX - left, evt.clientY - top]
+
+      this.drawPath(this.mousePathId, x, y)
     }
 
     this.handleMouseUp = evt => {
-      console.log('mouseup')
+      if (this.mousePathId == null || evt.button !== 0) return
+
+      this.endPath(this.mousePathId)
+      this.mousePathId = null
     }
 
     this.mount()
@@ -31,13 +44,13 @@ export class SmoothArtistCriminal {
   mount() {
     this.element.addEventListener('mousedown', this.handleMouseDown)
     this.element.addEventListener('mousemove', this.handleMouseMove)
-    this.element.addEventListener('mouseup', this.handleMouseUp)
+    document.addEventListener('mouseup', this.handleMouseUp)
   }
 
   unmount() {
     this.element.removeEventListener('mousedown', this.handleMouseDown)
     this.element.removeEventListener('mousemove', this.handleMouseMove)
-    this.element.removeEventListener('mouseup', this.handleMouseUp)
+    document.removeEventListener('mouseup', this.handleMouseUp)
   }
 
   startPath() {

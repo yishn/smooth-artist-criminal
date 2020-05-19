@@ -12,7 +12,7 @@ function norm([x, y]) {
 
 function normalize(a, p) {
   let n = norm(p)
-  return p.map(x => a * x / n)
+  return p.map(x => n === 0 ? 0 : a * x / n)
 }
 
 export function interpolate(controlPoints) {
@@ -37,9 +37,9 @@ export function interpolate(controlPoints) {
 
     return {
       p1,
-      c1: add(normalize(distance / 6, slopes[i]), p1),
+      c1: add(normalize(distance / 3, slopes[i]), p1),
       p2,
-      c2: subtract(normalize(distance / 6, slopes[i + 1]), p2)
+      c2: add(normalize(-distance / 3, slopes[i + 1]), p2)
     }
   })
 }
