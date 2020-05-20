@@ -22,7 +22,8 @@
   <script type="module">
     import {SmoothArtistCriminal} from '../src/main.js'
 
-    new SmoothArtistCriminal(document.getElementById('drawing'), {
+    new SmoothArtistCriminal({
+      svgElement: document.getElementById('drawing'),
       onEndPath: evt => {
         console.log('onEndPath', evt)
       }

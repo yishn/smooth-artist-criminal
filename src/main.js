@@ -67,36 +67,36 @@ export function cubicBeziersToPath(cubicBeziers) {
 }
 
 export class SmoothArtistCriminal {
-  constructor(element, opts = {}) {
+  constructor(opts = {}) {
     let def = (x, d) => x == null ? d : x
 
-    this.element = element
+    this._svgElement = opts.svgElement
+    this._id = 0
+    this._pathData = {}
+    this._pointerPathIds = {}
+
     this.options = {
       recordingInterval: def(opts.recordingInterval, 50),
       minRecordingDistance: def(opts.minRecordingDistance, 5),
 
       onStartPath: def(opts.onStartPath, () => {}),
-      onEndPath: def(opts.onEndPath, () => {}),
-      onDrawPath: def(opts.onDrawPath, () => {})
+      onDrawPath: def(opts.onDrawPath, () => {}),
+      onEndPath: def(opts.onEndPath, () => {})
     }
 
-    this.id = 0
-    this.pathData = {}
-    this.pointerPathIds = {}
-
     this.handlePointerDown = evt => {
-      if (this.pointerPathIds[evt.pointerId] != null || evt.button !== 0) return
+      if (this._pointerPathIds[evt.pointerId] != null || evt.button !== 0) return
 
       evt.preventDefault()
 
-      this.pointerPathIds[evt.pointerId] = this.startPath().id
+      this._pointerPathIds[evt.pointerId] = this.startPath().id
     }
 
     this.handlePointerMove = evt => {
-      if (this.pointerPathIds[evt.pointerId] == null) return
+      if (this._pointerPathIds[evt.pointerId] == null) return
 
-      let viewBox = this.element.viewBox.baseVal
-      let {left, top, width, height} = this.element.getBoundingClientRect()
+      let viewBox = this._svgElement.viewBox.baseVal
+      let {left, top, width, height} = this._svgElement.getBoundingClientRect()
       let point = [evt.clientX - left, evt.clientY - top].map(Math.round)
 
       if (viewBox.width > 0 && viewBox.height > 0) {
@@ -104,57 +104,65 @@ export class SmoothArtistCriminal {
         point[1] = point[1] * viewBox.height / height + viewBox.y
       }
 
-      this.drawPath(this.pointerPathIds[evt.pointerId], point)
+      this.drawPath(this._pointerPathIds[evt.pointerId], point)
     }
 
     this.handlePointerUp = evt => {
-      if (this.pointerPathIds[evt.pointerId] == null || evt.button !== 0) return
+      if (this._pointerPathIds[evt.pointerId] == null || evt.button !== 0) return
 
-      this.endPath(this.pointerPathIds[evt.pointerId])
-      delete this.pointerPathIds[evt.pointerId]
+      this.endPath(this._pointerPathIds[evt.pointerId])
+      delete this._pointerPathIds[evt.pointerId]
     }
 
     this.mount()
   }
 
   mount() {
-    this.element.addEventListener('pointerdown', this.handlePointerDown)
-    this.element.addEventListener('pointermove', this.handlePointerMove)
-    document.addEventListener('pointerup', this.handlePointerUp)
+    if (this._svgElement != null) {
+      this._svgElement.addEventListener('pointerdown', this.handlePointerDown)
+      this._svgElement.addEventListener('pointermove', this.handlePointerMove)
+      document.addEventListener('pointerup', this.handlePointerUp)
+    }
   }
 
   unmount() {
-    this.element.removeEventListener('pointerdown', this.handlePointerDown)
-    this.element.removeEventListener('pointermove', this.handlePointerMove)
-    document.removeEventListener('pointerup', this.handlePointerUp)
+    if (this._svgElement != null) {
+      this._svgElement.removeEventListener('pointerdown', this.handlePointerDown)
+      this._svgElement.removeEventListener('pointermove', this.handlePointerMove)
+      document.removeEventListener('pointerup', this.handlePointerUp)
+    }
   }
 
   startPath() {
-    let id = this.id++
-    let pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    let id = this._id++
+    let pathElement
 
-    pathElement.style.fill = 'transparent'
-    pathElement.style.stroke = 'black'
-    pathElement.style.strokeWidth = '1px'
+    if (this._svgElement != null) {
+      pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      pathElement.style.fill = 'transparent'
+      pathElement.style.stroke = 'black'
+      pathElement.style.strokeWidth = '1px'
 
-    this.element.appendChild(pathElement)
+      this._svgElement.appendChild(pathElement)
+    }
 
-    this.pathData[id] = {
+    this._pathData[id] = {
       id,
-      element: pathElement,
+      pathElement,
       controlPoints: [],
       currentPoint: null,
       lastRecordedTime: null,
-      cubicBeziers: []
+      cubicBeziers: [],
+      d: ''
     }
 
-    this.options.onStartPath(this.pathData[id])
-    return this.pathData[id]
+    this.options.onStartPath(this._pathData[id])
+    return this._pathData[id]
   }
 
   drawPath(id, point, {force = false} = {}) {
     let {recordingInterval, minRecordingDistance} = this.options
-    let pathData = this.pathData[id]
+    let pathData = this._pathData[id]
     if (pathData == null) return
 
     if (
@@ -171,16 +179,18 @@ export class SmoothArtistCriminal {
       pathData.cubicBeziers = cubicBezierInterpolation([...pathData.controlPoints, point])
     }
 
-    let d = cubicBeziersToPath(pathData.cubicBeziers)
-
+    pathData.d = cubicBeziersToPath(pathData.cubicBeziers)
     pathData.currentPoint = point
-    pathData.element.setAttribute('d', d)
+
+    if (pathData.pathElement != null) {
+      pathData.pathElement.setAttribute('d', pathData.d)
+    }
 
     this.options.onDrawPath(pathData)
   }
 
   endPath(id) {
-    let pathData = this.pathData[id]
+    let pathData = this._pathData[id]
     if (pathData == null) return
 
     if (
@@ -190,11 +200,11 @@ export class SmoothArtistCriminal {
       pathData.controlPoints.push(pathData.currentPoint)
     }
 
-    if (pathData.controlPoints.length === 0) {
-      pathData.element.parentNode.removeChild(pathData.element)
+    if (pathData.controlPoints.length === 0 && pathData.pathElement != null) {
+      pathData.pathElement.parentNode.removeChild(pathData.pathElement)
     }
 
     this.options.onEndPath(pathData)
-    delete this.pathData[id]
+    delete this._pathData[id]
   }
 }
