@@ -1,4 +1,58 @@
-import {interpolate, subtract, norm} from './cubicBezierInterpolation.js'
+function equals(p1, p2) {
+  return p1.length === p2.length && p1.every((x, i) => x === p2[i])
+}
+
+function add(p1, p2) {
+  return p1.map((x, i) => x + p2[i])
+}
+
+function subtract(p1, p2) {
+  return p1.map((x, i) => x - p2[i])
+}
+
+function norm(p) {
+  return Math.sqrt(p.reduce((sum, x) => sum + x ** 2, 0))
+}
+
+function normalize(a, p) {
+  let n = norm(p)
+  return p.map(x => n === 0 ? 0 : a * x / n)
+}
+
+export function getDifferentials(controlPoints) {
+  return controlPoints.map((p, i) =>
+    subtract(controlPoints[i + 1] || p, controlPoints[i - 1] || controlPoints[0])
+  )
+}
+
+export function cubicBezierInterpolation(controlPoints, differentials = null) {
+  if (controlPoints.length === 0) return []
+  if (controlPoints.length <= 2) {
+    return [{
+      p1: controlPoints[0],
+      c1: controlPoints[0],
+      p2: controlPoints[controlPoints.length - 1],
+      c2: controlPoints[controlPoints.length - 1]
+    }]
+  }
+
+  if (differentials == null || differentials.length !== controlPoints.length) {
+    differentials = getDifferentials(controlPoints)
+  }
+
+  return controlPoints.slice(0, -1).map((p, i) => {
+    let p1 = p
+    let p2 = controlPoints[i + 1]
+    let distance = norm(subtract(p2, p1))
+
+    return {
+      p1,
+      c1: add(p1, normalize(distance / 3, differentials[i])),
+      p2,
+      c2: subtract(p2, normalize(distance / 3, differentials[i + 1]))
+    }
+  })
+}
 
 export function cubicBeziersToPath(cubicBeziers) {
   if (cubicBeziers.length === 0) return ''
@@ -13,17 +67,17 @@ export function cubicBeziersToPath(cubicBeziers) {
 }
 
 export class SmoothArtistCriminal {
-  constructor(element, options = {}) {
+  constructor(element, opts = {}) {
     let def = (x, d) => x == null ? d : x
 
     this.element = element
     this.options = {
-      recordingInterval: def(options.recordingInterval, 50),
-      minRecordingDistance: def(options.minRecordingDistance, 5),
+      recordingInterval: def(opts.recordingInterval, 50),
+      minRecordingDistance: def(opts.minRecordingDistance, 5),
 
-      onStartPath: def(options.onStartPath, () => {}),
-      onEndPath: def(options.onEndPath, () => {}),
-      onDrawPath: def(options.onDrawPath, () => {})
+      onStartPath: def(opts.onStartPath, () => {}),
+      onEndPath: def(opts.onEndPath, () => {}),
+      onDrawPath: def(opts.onDrawPath, () => {})
     }
 
     this.id = 0
@@ -112,9 +166,9 @@ export class SmoothArtistCriminal {
     ) {
       pathData.lastRecordedTime = Date.now()
       pathData.controlPoints.push(point)
-      pathData.cubicBeziers = interpolate(pathData.controlPoints)
+      pathData.cubicBeziers = cubicBezierInterpolation(pathData.controlPoints)
     } else {
-      pathData.cubicBeziers = interpolate([...pathData.controlPoints, point])
+      pathData.cubicBeziers = cubicBezierInterpolation([...pathData.controlPoints, point])
     }
 
     let d = cubicBeziersToPath(pathData.cubicBeziers)
@@ -129,7 +183,12 @@ export class SmoothArtistCriminal {
     let pathData = this.pathData[id]
     if (pathData == null) return
 
-    pathData.controlPoints.push(pathData.currentPoint)
+    if (
+      pathData.controlPoints.length > 0 &&
+      !equals(pathData.controlPoints.slice(-1)[0], pathData.currentPoint)
+    ) {
+      pathData.controlPoints.push(pathData.currentPoint)
+    }
 
     if (pathData.controlPoints.length === 0) {
       pathData.element.parentNode.removeChild(pathData.element)
