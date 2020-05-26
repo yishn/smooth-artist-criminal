@@ -95,6 +95,8 @@ export class SmoothArtistCriminal {
     this.handlePointerMove = evt => {
       if (this._pointerPathIds[evt.pointerId] == null) return
 
+      evt.preventDefault()
+
       let viewBox = this._svgElement.viewBox.baseVal
       let {left, top, width, height} = this._svgElement.getBoundingClientRect()
       let point = [evt.clientX - left, evt.clientY - top].map(Math.round)
